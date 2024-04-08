@@ -13,3 +13,9 @@ tomli==2.0.1
 tzdata==2023.3
 colorthief
 choice
+cairosvg
+Pillow
+svgwrite
+lxml
+numpy
+ezdxf

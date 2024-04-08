@@ -5,19 +5,23 @@ import MainWrapper from './layouts/MainWrapper';
 import Login from './views/login';
 import PrivateRoute from './layouts/PrivateRoute';
 import Logout from './views/logout';
-import Private from './views/private';
+import Create from './views/create';
 import Register from './views/register';
+import Header from './header';
+
 
 function App() {
     return (
+
         <BrowserRouter>
+            <Header />
             <MainWrapper>
                 <Routes>
                     <Route
-                        path="/private"
+                        path="/create"
                         element={
                             <PrivateRoute>
-                                <Private />
+                                <Create />
                             </PrivateRoute>
                         }
                     />

@@ -1,0 +1,17 @@
+{
+    "size": {
+        "label": "Size",
+        "options": [
+            {"value": "M", "indexMult": 1},
+            {"value": "L", "indexMult": 1.1},
+            {"value": "XL", "indexMult": 1.15}
+        ]
+    },
+    "model": {
+        "label": "Model",
+        "options": [
+            {"value": "Ninja", "cost": 1500},
+            {"value": "Vodolaz", "cost": 500}
+        ]
+    }
+}
