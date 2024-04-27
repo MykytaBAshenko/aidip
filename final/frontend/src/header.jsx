@@ -51,7 +51,7 @@ function Header() {
                     allUserData ? <>
                       <Nav.Link href="/">Home</Nav.Link>
                       <Nav.Link href="/create">Create order</Nav.Link>
-                      <Nav.Link href="#action1">Orders list</Nav.Link>
+                      <Nav.Link href="/list">Orders list</Nav.Link>
                       <Nav.Link href="/logout">Logout</Nav.Link>
                     </> : <>
                       <Nav.Link href="/">Home</Nav.Link>

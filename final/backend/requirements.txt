@@ -19,3 +19,6 @@ svgwrite
 lxml
 numpy
 ezdxf
+svgpathtools
+reportlab
+matplotlib

@@ -6,6 +6,8 @@ import Login from './views/login';
 import PrivateRoute from './layouts/PrivateRoute';
 import Logout from './views/logout';
 import Create from './views/create';
+import List from './views/list';
+import Order from './views/order';
 import Register from './views/register';
 import Header from './header';
 
@@ -22,6 +24,22 @@ function App() {
                         element={
                             <PrivateRoute>
                                 <Create />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/list"
+                        element={
+                            <PrivateRoute>
+                                <List />
+                            </PrivateRoute>
+                        }
+                    />
+                                        <Route
+                        path="/order"
+                        element={
+                            <PrivateRoute>
+                                <Order />
                             </PrivateRoute>
                         }
                     />
