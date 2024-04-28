@@ -77,8 +77,7 @@ useEffect(() => {
             for (const image of images) {
                 formData.append('images', image); // Add each image to FormData
             }
-            formData.append('formData', JSON.stringify(form)); // Add each image to FormData
-
+            formData.append('formData', JSON.stringify({...form, cost})); // Add each image to FormData
 
             const response = await api.post('/generate-order/', formData, {
                 headers: {

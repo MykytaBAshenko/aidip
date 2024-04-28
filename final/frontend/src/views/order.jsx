@@ -121,7 +121,7 @@ useEffect(() => {
             for (const image of images) {
                 formData.append('images', image); // Add each image to FormData
             }
-            formData.append('formData', JSON.stringify(form)); // Add each image to FormData
+            formData.append('formData', JSON.stringify({...form, cost})); // Add each image to FormData
 
 
             const response = await api.post('/generate-order/', formData, {
@@ -129,7 +129,6 @@ useEffect(() => {
                     'Content-Type': 'multipart/form-data', // Set content type for multipart data
                 },
             });
-            console.log(response.data)
             setGenerated(response.data.generated_filename)
             setGeneratedWithCut(response.data.generated_with_cut_filename)
             setPdf(response.data.generated_pdf_filename)
