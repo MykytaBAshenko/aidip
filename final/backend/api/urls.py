@@ -162,91 +162,100 @@ def add_svg_to_image(background_image_path, svg_file_path, output_image_path):
 
     # Save the composite image
     composite_image.save(output_image_path)
+
+
+def generate_background(generated_filepath, images, width, height):
+    if not images:
+        return Response({'error': 'No images uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
+    upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads/')
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+
+    color_data = []
+    for image in images:
+        filename = image.name
+        filepath = os.path.join(upload_dir, filename)
+
+        # Save image to file system
+        with open(filepath, 'wb') as destination:
+            for chunk in image.chunks():
+                destination.write(chunk)
+
+        # Analyze colors using colorthief
+        color_thief = ColorThief(filepath)
+        dominant_colors = color_thief.get_palette(color_count=10)
+        color_data.append({
+            'filename': filename,
+            'colors': list(dominant_colors)  # Convert tuple to list for response
+        })
+    
+    common_color_data = []
+    for i in range(len(color_data[0]['colors'])):  # Iterate over color indices
+        color_values = [item['colors'][i] for item in color_data]  # Get colors at the same index
+        middle_value = sorted(color_values)[len(color_values) // 2]
+        common_color_data.append(middle_value)
+
+    square_size = int(int(width) // SQUARES_IN_WIDTH) 
+    num_squares_x = int(int(width) // square_size) + 1 
+    num_squares_y = int(int(height) // square_size) + 1 
+    img = Image.new('RGB', (num_squares_x * square_size, num_squares_y * square_size))  # Create square image
+    pixels = img.load()
+    for y in range(num_squares_y):
+        for x in range(num_squares_x):
+            random_color = random.choice(common_color_data)  # Choose a random color
+
+            # Fill entire square with the randomly chosen color
+            for y_offset in range(square_size):
+                for x_offset in range(square_size):
+                    current_y = y * square_size + y_offset
+                    current_x = x * square_size + x_offset
+                    if 0 <= current_y < img.height and 0 <= current_x < img.width:
+                        pixels[current_x, current_y] = random_color
+    img.save(generated_filepath)
+
+
+    
+    
 class GenerateOrder(APIView):
     parser_classes = [MultiPartParser, FormParser]
-
-
 
     def post(self, request):
         try:
             json_data_str = request.POST['formData']
             form_data = json.loads(json_data_str)
             print(form_data)
-            images = request.FILES.getlist('images')
-            if not images:
-                return Response({'error': 'No images uploaded'}, status=status.HTTP_400_BAD_REQUEST)
-
-            upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads/')
-
-            if not os.path.exists(upload_dir):
-                os.makedirs(upload_dir)
-
-            color_data = []
-            for image in images:
-                filename = image.name
-                filepath = os.path.join(upload_dir, filename)
-
-                # Save image to file system
-                with open(filepath, 'wb') as destination:
-                    for chunk in image.chunks():
-                        destination.write(chunk)
-
-                # Analyze colors using colorthief
-                color_thief = ColorThief(filepath)
-                dominant_colors = color_thief.get_palette(color_count=10)
-                color_data.append({
-                    'filename': filename,
-                    'colors': list(dominant_colors)  # Convert tuple to list for response
-                })
-            
-            common_color_data = []
-            for i in range(len(color_data[0]['colors'])):  # Iterate over color indices
-                color_values = [item['colors'][i] for item in color_data]  # Get colors at the same index
-                middle_value = sorted(color_values)[len(color_values) // 2]
-                common_color_data.append(middle_value)
             current_time_unix = str(int(time.time()))
             generated_filename = current_time_unix + 'generated_background.png'
             generated_filepath = os.path.join(settings.MEDIA_ROOT, 'generated/', generated_filename)
             os.makedirs(os.path.dirname(generated_filepath), exist_ok=True)  # Ensure generated directory exists
-            
-            svg_path = os.path.join(settings.MEDIA_ROOT, 'clothesdata/', form_data.get('model', '') + "/" + form_data.get('model', '') + ".svg")
-            tree = ET.parse(svg_path)
+            instruction_file = os.path.join(settings.MEDIA_ROOT, 'clothesdata/', form_data.get('model', '') + "/" + form_data.get('model', '') + ".svg")
+            images = request.FILES.getlist('images')
+            tree = ET.parse(instruction_file)
+            root = tree.getroot()
+            width = root.get('width')
+            height = root.get('height')
+            generate_background(generated_filepath, images, width, height)
+
+
             root = tree.getroot()
             width = root.get('width')
             height = root.get('height')
             width_in_mm = 1900
             height_in_mm = int((int(height) *int(width_in_mm))/ int(width))
             pdf_size_data = {'width_in_mm':width_in_mm, 'height_in_mm':height_in_mm}
-            square_size = int(int(width) // SQUARES_IN_WIDTH) 
-            num_squares_x = int(int(width) // square_size) + 1 
-            num_squares_y = int(int(height) // square_size) + 1 
-            img = Image.new('RGB', (num_squares_x * square_size, num_squares_y * square_size))  # Create square image
-            pixels = img.load()
-            for y in range(num_squares_y):
-                for x in range(num_squares_x):
-                    random_color = random.choice(common_color_data)  # Choose a random color
-
-                    # Fill entire square with the randomly chosen color
-                    for y_offset in range(square_size):
-                        for x_offset in range(square_size):
-                            current_y = y * square_size + y_offset
-                            current_x = x * square_size + x_offset
-                            if 0 <= current_y < img.height and 0 <= current_x < img.width:
-                                pixels[current_x, current_y] = random_color
-            img.save(generated_filepath)
             # Open the DXF file
             generated_with_cut_filename = current_time_unix + 'generated_with_cut.png'
             generated_with_cut = os.path.join(settings.MEDIA_ROOT, 'generated/', generated_with_cut_filename)
-            add_svg_to_image(generated_filepath, svg_path, generated_with_cut)
+            add_svg_to_image(generated_filepath, instruction_file, generated_with_cut)
             generated_pdf_filename = current_time_unix + "output.pdf"
             generated_pdf = os.path.join(settings.MEDIA_ROOT, 'generated/', generated_pdf_filename)
             generate_chart_and_save_to_pdf(calculate_ink_percentage(generated_filepath), form_data,pdf_size_data, generated_pdf)
             return Response({'response': 'Images uploaded successfully',
                              'generated_filename': generated_filename,
                              'generated_pdf_filename': generated_pdf_filename,
-                             'generated_with_cut_filename': generated_with_cut_filename, 
-                             'common_color_data': common_color_data, 
-                             'color_data': color_data}, status=status.HTTP_201_CREATED)
+                             'generated_with_cut_filename': generated_with_cut_filename
+                            }, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

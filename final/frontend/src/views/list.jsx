@@ -11,13 +11,18 @@ const List = () => {
   ]);
    const api = useAxios();
    const [ordersList, setOrdersList] = useState([])
+   const [products, setProducts] = useState([])
+
    useEffect(() => {
       const fetchData = async () => {
           try {
               const response = await api.get('/get-list-data'); // Replace with your actual endpoint
-              const metaData = JSON.parse(response.data)
-              console.log(metaData)
+              
+              const metaData = JSON.parse(response.data.orders)
+              const productsMetaData = JSON.parse(response.data.products)
+                console.log(productsMetaData)
               setOrdersList(metaData)
+              setProducts(productsMetaData)
           } catch (error) {
               console.error( error);
           }
@@ -60,6 +65,21 @@ const List = () => {
                   <div className='order-child-cost'> {orderData.cost}$ </div>
                   </div>
                   <div className='order-child-right'>
+                  {
+                    (() => {
+                        let productTitle = products.find(p => {
+                            return p.pk === orderData.model
+                        })
+                        console.log(productTitle.fields.title)
+                        return <div className='list-links'>
+                            <a key={Math.random()} href={`http://localhost:3000/dxf?filename=${productTitle.fields.title}`} download>dxf</a>
+                            <a key={Math.random()} href={`http://localhost:3000/pdf?filename=${orderData.pdfPath}`} download>pdf</a>
+                            <a key={Math.random()} href={`http://localhost:3000/image?filename=${orderData.backgroundPath}`} download>bg</a>
+                            <a key={Math.random()} href={`http://localhost:3000/image?filename=${orderData.cutPath}`} download>cut</a>
+                            
+                            </div>
+                    })() 
+                  }
                   <Form.Group className="col col-sm-12">
                         <Form.Select className="form-control" name="size" value={orderData.status} onChange={(e) => setNewStatus({pk: order.pk, value: e.target.value})}>
                            {
@@ -67,6 +87,7 @@ const List = () => {
                            }
                         </Form.Select>
                   </Form.Group> 
+
                   <a className='btn btn-success' href={`/order?id=${order.pk}`}>LOOKIN</a>
             {user().user_id === orderData.creator &&
                   

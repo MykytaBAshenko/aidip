@@ -98,3 +98,10 @@ h1.pageTitle{
   padding: 0 30px;
 }
 
+
+.list-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}

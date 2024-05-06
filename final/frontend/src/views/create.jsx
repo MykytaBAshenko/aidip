@@ -84,7 +84,6 @@ useEffect(() => {
                     'Content-Type': 'multipart/form-data', // Set content type for multipart data
                 },
             });
-            console.log(response.data)
             setGenerated(response.data.generated_filename)
             setGeneratedWithCut(response.data.generated_with_cut_filename)
             setPdf(response.data.generated_pdf_filename)

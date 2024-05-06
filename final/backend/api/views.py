@@ -69,6 +69,15 @@ def getCreateData(request):
 def getListData(request):
     if request.method == 'GET':
         all_order = Order.objects.all()
+        all_product = Product.objects.all()
+
         order_json = serializers.serialize('json', all_order)
-        return JsonResponse(order_json,safe=False, status=status.HTTP_200_OK)
+        product_json = serializers.serialize('json', all_product)
+
+        data = {
+            'orders': order_json,
+            'products': product_json
+        }
+        print(data)
+        return JsonResponse(data, safe=False, status=status.HTTP_200_OK)
       
