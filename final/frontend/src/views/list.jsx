@@ -75,9 +75,8 @@ const List = () => {
                             <a key={Math.random()} href={`http://localhost:3000/dxf?filename=${productTitle.fields.title}`} download>dxf</a>
                             <a key={Math.random()} href={`http://localhost:3000/pdf?filename=${orderData.pdfPath}`} download>pdf</a>
                             <a key={Math.random()} href={`http://localhost:3000/image?filename=${orderData.backgroundPath}`} download>bg</a>
-                            <a key={Math.random()} href={`http://localhost:3000/image?filename=${orderData.cutPath}`} download>cut</a>
-                            
-                            </div>
+                            <a key={Math.random()} href={`http://localhost:3000/image?filename=${orderData.cutPath}`} download>cut</a>                  
+                        </div>
                     })() 
                   }
                   <Form.Group className="col col-sm-12">
@@ -87,7 +86,8 @@ const List = () => {
                            }
                         </Form.Select>
                   </Form.Group> 
-
+                  <a className='btn btn-info' href={`/analyze?id=${order.pk}`}>ANALYZE</a>
+                
                   <a className='btn btn-success' href={`/order?id=${order.pk}`}>LOOKIN</a>
             {user().user_id === orderData.creator &&
                   

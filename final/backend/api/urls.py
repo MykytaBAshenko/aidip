@@ -215,7 +215,37 @@ def generate_background(generated_filepath, images, width, height):
     img.save(generated_filepath)
 
 
-    
+class AnalyzeImage(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        try:
+            json_data_str = request.POST['formData']
+            form_data = json.loads(json_data_str)
+            print(form_data)
+            images = request.FILES.getlist('images')
+            if not images:
+                return Response({'error': 'No images uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
+            upload_dir = os.path.join(settings.MEDIA_ROOT, 'temp/')
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir)
+
+            for image in images:
+                filename = image.name
+                filepath = os.path.join(upload_dir, filename)
+
+                # Save image to file system
+                with open(filepath, 'wb') as destination:
+                    for chunk in image.chunks():
+                        destination.write(chunk)
+            print(images)
+            return Response({'response': 'Images uploaded successfully',
+                     }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
     
 class GenerateOrder(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -383,7 +413,9 @@ urlpatterns = [
     path('update-order/', UpdateOrder.as_view()),
     path('get-update-order/', GetUpdateOrder.as_view()),
     path('get-create-data/', views.getCreateData, name="get-create-data"),
-    path('get-list-data/', views.getListData, name="get-list-data")
+    path('get-list-data/', views.getListData, name="get-list-data"),
+    path('analyze/', AnalyzeImage.as_view()),
+
 ]
 
 

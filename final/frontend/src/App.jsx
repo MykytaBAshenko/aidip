@@ -9,6 +9,7 @@ import Create from './views/create';
 import List from './views/list';
 import Order from './views/order';
 import Register from './views/register';
+import Analyze from './views/analyze';
 import Header from './header';
 
 
@@ -40,6 +41,14 @@ function App() {
                         element={
                             <PrivateRoute>
                                 <Order />
+                            </PrivateRoute>
+                        }
+                    />
+                                                <Route
+                        path="/analyze"
+                        element={
+                            <PrivateRoute>
+                                <Analyze />
                             </PrivateRoute>
                         }
                     />
