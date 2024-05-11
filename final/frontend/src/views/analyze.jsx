@@ -11,7 +11,16 @@ const Analyze = () => {
         state.isLoggedIn,
         state.user,
     ]);
+    const [generated_background, setGenerated_background] = useState(false);
+    const [generated_red_background, setGenerated_red_background] = useState(false);
+    const [csv_long, setCsv_long] = useState(false);
+    const [csv_big, setCsv_big] = useState(false);
+    const [difference, setDifference] = useState(false);
     const [generated, setGenerated] = useState(false);
+
+
+    
+    
     const api = useAxios();
     const [images, setImages] = useState([]); // State to store selected images
     const [form, setForm] = useState({
@@ -81,7 +90,7 @@ useEffect(() => {
             for (const image of images) {
                 formData.append('images', image); // Add each image to FormData
             }
-            formData.append('formData', JSON.stringify({...form})); // Add each image to FormData
+            formData.append('formData', JSON.stringify({...form, generated})); // Add each image to FormData
 
             console.log(formData)
             const response = await api.post('/analyze/', formData, {
@@ -90,6 +99,12 @@ useEffect(() => {
                 },
             });
             console.log(response.data)
+            setGenerated_background(response.data.generated_background)
+            setGenerated_red_background(response.data.generated_red_background)
+            setCsv_long(response.data.csv_long)
+            setCsv_big(response.data.csv_big)
+            setDifference(response.data.difference
+            )
 
             // setGenerated(response.data.generated_filename)
         } catch (error) {
@@ -151,8 +166,8 @@ useEffect(() => {
                 {images.length > 0 && ( // Conditionally render image previews
                 <div className='images-list'>
                     <h4>Selected Images:</h4>
-                    <div className='images-list-list'>
-
+                    <div className='images-list-list'> 
+ 
                     {images.map((image, i) => (
                         <img key={i} onClick={() => deleteImage(image)} src={URL.createObjectURL(image)} alt={image.name} /> // Display image previews
                     ))}
@@ -163,6 +178,12 @@ useEffect(() => {
 
 </form>
 <div className='generated_images'>
+        {generated_background ? <a href={`http://localhost:3000/analyze/image?filename=${generated_background}`} target='blank'>Generated background for order</a>: null}
+        {generated_red_background ? <a href={`http://localhost:3000/analyze/image?filename=${generated_red_background}`} target='blank'>Generated background with red difference for order</a>: null}
+        {csv_long ? <a href={`http://localhost:3000/analyze/csv?filename=${csv_long}`} target='blank'>CSV pixel data</a>: null}
+        {csv_big ? <a href={`http://localhost:3000/analyze/image?filename=${csv_big}`} target='blank'>CSV matrix</a>: null}
+        
+        {difference ? <div>{difference}</div>: null}
 
                 {
                     generated ? <div> Generated background </div> : null

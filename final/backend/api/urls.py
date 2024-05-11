@@ -31,6 +31,7 @@ from api.models import Product
 from django.core import serializers
 from django.http import JsonResponse
 import numpy as np
+import csv
 SQUARES_IN_WIDTH = 190
 def generate_chart_and_save_to_pdf(data,form_data,pdf_size_data, filename):
     # Prepare data for chart
@@ -215,6 +216,103 @@ def generate_background(generated_filepath, images, width, height):
     img.save(generated_filepath)
 
 
+
+class PNGManager:
+    def __init__(self, image_path):
+        self.image = Image.open(image_path)
+        self.temp_directory = os.path.join(settings.MEDIA_ROOT, 'tempParts/')
+        self.generated_directory = os.path.join(settings.MEDIA_ROOT, 'generatedParts/')
+        os.makedirs(self.temp_directory, exist_ok=True)
+        self.split_images = []
+    
+    def split_image(self):
+        width, height = self.image.size
+        self.split_width = width // 100
+        self.split_height = height // 100
+
+        for x in range(100):
+            for y in range(100):
+                left = x * self.split_width
+                top = y * self.split_height
+                right = left + self.split_width
+                bottom = top + self.split_height
+                cropped_image = self.image.crop((left, top, right, bottom))
+                path = os.path.join(self.temp_directory, f'image_{x}_{y}.png')
+                cropped_image.save(path)
+                self.split_images.append((cropped_image, path))
+
+    def combine_images(self, finalSave, fromX, fromY, width, height):
+        target_width = int(self.split_width * (width / 100 * 100))
+        target_height = int(self.split_height * (height / 100 * 100))
+        combined_image = Image.new('RGB', (target_width, target_height))
+        
+        for x in range(fromX, fromX + width):
+            for y in range(fromY, fromY + height):
+                path = os.path.join(self.temp_directory, f'image_{x}_{y}.png')
+                img = Image.open(path)
+                combined_image.paste(img, ((x - fromX) * self.split_width, (y - fromY) * self.split_height))
+        
+        combined_image.save(finalSave)
+        return combined_image
+
+    def compare_images(self, image_path, generated_filepath, fromX, fromY, width, height):
+        base_image = Image.open(generated_filepath)
+        comparing_image = Image.open(image_path)
+        base_pixels = base_image.load()
+        comparing_pixels = comparing_image.load()
+
+        differences = []
+        for x in range(base_image.width):
+            for y in range(base_image.height):
+                r1, g1, b1 = base_pixels[x, y]
+                r2, g2, b2 = comparing_pixels[x, y]
+                differences.append((abs(r1-r2), abs(g1-g2), abs(b1-b2)))
+
+        return differences
+
+    def compare_images(self, image_path, generated_filepath, generated_red_filepath, generated_csv_small_filepath, generated_csv_big_filepath):
+        base_image = Image.open(generated_filepath)
+        comparing_image = Image.open(image_path)
+        base_pixels = base_image.load()
+        comparing_pixels = comparing_image.load()
+
+        visual_image = Image.new('RGB', base_image.size, color='white')
+        visual_pixels = visual_image.load()
+        total_difference = 0  # To track the total difference
+        max_possible_diff = 3 * 255 * base_image.width * base_image.height  
+        # Detailed CSV 
+        with open(generated_csv_small_filepath, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['X', 'Y', 'Red Difference', 'Green Difference', 'Blue Difference'])
+
+            # Matrix-like CSV for RGB differences
+            matrix_csv = [['(R, G, B)' for _ in range(base_image.width)] for _ in range(base_image.height)]
+            for x in range(base_image.width):
+                for y in range(base_image.height):
+                    r1, g1, b1 = base_pixels[x, y]
+                    r2, g2, b2 = comparing_pixels[x, y]
+                    diff = (abs(r1 - r2), abs(g1 - g2), abs(b1 - b2))
+                    writer.writerow([x, y] + list(diff))
+
+                    # Update total difference
+                    total_difference += sum(diff)
+
+                    # Calculate intensity of red based on the average difference
+                    intensity = sum(diff) / (3 * 255)
+                    red_intensity = int(255 * intensity)
+                    visual_pixels[x, y] = (255, 255 - red_intensity, 255 - red_intensity)
+                    matrix_csv[y][x] = f"({diff[0]}, {diff[1]}, {diff[2]})"
+
+        visual_image.save(generated_red_filepath)
+
+        # Save the matrix-like CSV
+        with open(generated_csv_big_filepath, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            for row in matrix_csv:
+                writer.writerow(row)
+        
+        mismatch_percentage = (total_difference / max_possible_diff) * 100
+        return mismatch_percentage
 class AnalyzeImage(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -226,21 +324,45 @@ class AnalyzeImage(APIView):
             images = request.FILES.getlist('images')
             if not images:
                 return Response({'error': 'No images uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+            # os.path.join(settings.MEDIA_ROOT, 'clothesdata/', form_data.get('model', '') + "/" + form_data.get('model', '') + ".svg")
 
             upload_dir = os.path.join(settings.MEDIA_ROOT, 'temp/')
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir)
-
+            checkImagePath = ""
             for image in images:
                 filename = image.name
                 filepath = os.path.join(upload_dir, filename)
-
+                checkImagePath = filepath
                 # Save image to file system
                 with open(filepath, 'wb') as destination:
                     for chunk in image.chunks():
                         destination.write(chunk)
             print(images)
-            return Response({'response': 'Images uploaded successfully',
+            print(checkImagePath)
+            
+            manager = PNGManager(os.path.join(settings.MEDIA_ROOT, 'generated/') + form_data['generated'])
+            current_time_unix = str(int(time.time()))
+            generated_filename = current_time_unix + 'generated_background.png'
+            generated_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_filename)
+            generated_red_filename = current_time_unix + 'generated_background_red.png'
+            generated_red_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_red_filename)
+            generated_csv_small_filename = current_time_unix + 'generated_small.csv'
+            generated_csv_small_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_csv_small_filename)
+            generated_csv_big_filename = current_time_unix + 'generated_big.csv'
+            generated_csv_big_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_csv_big_filename)
+            manager.split_image()
+            manager.combine_images(generated_filepath, 0, 0, 100, 100)
+            difference = manager.compare_images(checkImagePath, generated_filepath, generated_red_filepath, generated_csv_small_filepath, generated_csv_big_filepath)
+            print(difference)
+            return Response({'response': 'lol',
+                            'generated_background': generated_filename,
+                            'generated_red_background': generated_red_filename,
+                            'csv_long': generated_csv_small_filename,
+                            'csv_big': generated_csv_big_filename,
+                            'difference': difference
+
+
                      }, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)

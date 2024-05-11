@@ -48,6 +48,35 @@ app.get('/dxf', (req, res) => {
     });
 });
 
+app.get('/analyze/image', (req, res) => {
+    // Read the image file from the file system
+    fs.readFile(`${process.cwd()}/../backend/media/generatedParts/${req.query.filename}`, (err, data) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Internal Server Error');
+            return;
+        }
+        res.setHeader('Content-Disposition', 'attachment; filename="' + req.query.filename + '"');
+        res.contentType('image/jpeg');
+        res.send(data);
+    });
+});
+
+app.get('/analyze/csv', (req, res) => {
+    // Read the CSV file from the file system
+    fs.readFile(`${process.cwd()}/../backend/media/generatedParts/${req.query.filename}/${req.query.filename}.csv`, (err, data) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Internal Server Error');
+            return;
+        }
+        // Set Content-Disposition header to make the browser download the CSV file
+        res.setHeader('Content-Disposition', `attachment; filename="${req.query.filename}.csv"`);
+        res.contentType('text/csv'); // Set content type for CSV file
+        res.send(data);
+    });
+});
+
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
