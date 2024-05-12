@@ -254,23 +254,7 @@ class PNGManager:
         
         combined_image.save(finalSave)
         return combined_image
-
-    def compare_images(self, image_path, generated_filepath, fromX, fromY, width, height):
-        base_image = Image.open(generated_filepath)
-        comparing_image = Image.open(image_path)
-        base_pixels = base_image.load()
-        comparing_pixels = comparing_image.load()
-
-        differences = []
-        for x in range(base_image.width):
-            for y in range(base_image.height):
-                r1, g1, b1 = base_pixels[x, y]
-                r2, g2, b2 = comparing_pixels[x, y]
-                differences.append((abs(r1-r2), abs(g1-g2), abs(b1-b2)))
-
-        return differences
-
-    def compare_images(self, image_path, generated_filepath, generated_red_filepath, generated_csv_small_filepath, generated_csv_big_filepath):
+    def compare_images(self, image_path, generated_filepath, generated_red_filepath, generated_csv_small_filepath, generated_csv_matrix_filepath):
         base_image = Image.open(generated_filepath)
         comparing_image = Image.open(image_path)
         base_pixels = base_image.load()
@@ -306,7 +290,7 @@ class PNGManager:
         visual_image.save(generated_red_filepath)
 
         # Save the matrix-like CSV
-        with open(generated_csv_big_filepath, mode='w', newline='') as file:
+        with open(generated_csv_matrix_filepath, mode='w', newline='') as file:
             writer = csv.writer(file)
             for row in matrix_csv:
                 writer.writerow(row)
@@ -349,17 +333,17 @@ class AnalyzeImage(APIView):
             generated_red_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_red_filename)
             generated_csv_small_filename = current_time_unix + 'generated_small.csv'
             generated_csv_small_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_csv_small_filename)
-            generated_csv_big_filename = current_time_unix + 'generated_big.csv'
-            generated_csv_big_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_csv_big_filename)
+            generated_csv_matrix_filename = current_time_unix + 'generated_big.csv'
+            generated_csv_matrix_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_csv_matrix_filename)
             manager.split_image()
             manager.combine_images(generated_filepath, 0, 0, 100, 100)
-            difference = manager.compare_images(checkImagePath, generated_filepath, generated_red_filepath, generated_csv_small_filepath, generated_csv_big_filepath)
+            difference = manager.compare_images(checkImagePath, generated_filepath, generated_red_filepath, generated_csv_small_filepath, generated_csv_matrix_filepath)
             print(difference)
             return Response({'response': 'lol',
                             'generated_background': generated_filename,
                             'generated_red_background': generated_red_filename,
                             'csv_long': generated_csv_small_filename,
-                            'csv_big': generated_csv_big_filename,
+                            'csv_matrix': generated_csv_matrix_filename,
                             'difference': difference
 
 
@@ -518,6 +502,22 @@ class GetUpdateOrder(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class GetAnalyzeOrder(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        try:
+            form_data = json.loads(request.POST['updateData'])
+            order_id = form_data['id']  # Assuming you pass orderId for update
+            order = Order.objects.get(pk=order_id)
+            print(order)
+            order_json = serializers.serialize('json', [order])
+            return JsonResponse(order_json,safe=False, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
@@ -536,6 +536,7 @@ urlpatterns = [
     path('get-update-order/', GetUpdateOrder.as_view()),
     path('get-create-data/', views.getCreateData, name="get-create-data"),
     path('get-list-data/', views.getListData, name="get-list-data"),
+    path('get-analyze-order/', GetAnalyzeOrder.as_view()),
     path('analyze/', AnalyzeImage.as_view()),
 
 ]

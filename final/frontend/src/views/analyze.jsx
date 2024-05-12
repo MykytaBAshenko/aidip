@@ -14,7 +14,7 @@ const Analyze = () => {
     const [generated_background, setGenerated_background] = useState(false);
     const [generated_red_background, setGenerated_red_background] = useState(false);
     const [csv_long, setCsv_long] = useState(false);
-    const [csv_big, setCsv_big] = useState(false);
+    const [csv_matrix, setCsv_matrix] = useState(false);
     const [difference, setDifference] = useState(false);
     const [generated, setGenerated] = useState(false);
 
@@ -41,7 +41,7 @@ useEffect(() => {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 formData.append('updateData', JSON.stringify({id: urlParams.get('id')})); // Add each image to FormData
-                const response = await api.post('/get-update-order/', formData, {
+                const response = await api.post('/get-analyze-order/', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data', // Set content type for multipart data
                     },
@@ -102,7 +102,7 @@ useEffect(() => {
             setGenerated_background(response.data.generated_background)
             setGenerated_red_background(response.data.generated_red_background)
             setCsv_long(response.data.csv_long)
-            setCsv_big(response.data.csv_big)
+            setCsv_matrix(response.data.csv_matrix)
             setDifference(response.data.difference
             )
 
@@ -181,7 +181,7 @@ useEffect(() => {
         {generated_background ? <a href={`http://localhost:3000/analyze/image?filename=${generated_background}`} target='blank'>Generated background for order</a>: null}
         {generated_red_background ? <a href={`http://localhost:3000/analyze/image?filename=${generated_red_background}`} target='blank'>Generated background with red difference for order</a>: null}
         {csv_long ? <a href={`http://localhost:3000/analyze/csv?filename=${csv_long}`} target='blank'>CSV pixel data</a>: null}
-        {csv_big ? <a href={`http://localhost:3000/analyze/image?filename=${csv_big}`} target='blank'>CSV matrix</a>: null}
+        {csv_matrix ? <a href={`http://localhost:3000/analyze/image?filename=${csv_matrix}`} target='blank'>CSV matrix</a>: null}
         
         {difference ? <div>{difference}</div>: null}
 
