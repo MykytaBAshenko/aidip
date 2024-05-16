@@ -139,6 +139,51 @@ def calculate_ink_percentage(image_path):
         'Black': black_percent
     }
 
+def calculate_cmyk_matrix(image_path, generated_filepath):
+    # Open the image
+    img = Image.open(image_path)
+
+    # Convert the image to a numpy array for easier processing
+    img_array = np.array(img)
+
+    # Get the dimensions of the image
+    height, width, _ = img_array.shape
+
+    # Initialize the CMYK matrix
+    cmyk_matrix = np.zeros((height, width, 4))
+
+    # Iterate over each pixel in the image
+    for i in range(height):
+        for j in range(width):
+            # Get the RGB values of the current pixel
+            r, g, b = img_array[i, j]
+
+            # Compute the CMYK values
+            c = 1 - r / 255
+            m = 1 - g / 255
+            y = 1 - b / 255
+            k = min(c, m, y)
+
+            # Normalize CMYK values so their sum equals 1
+            total = c + m + y + k
+            if total > 0:
+                c /= total
+                m /= total
+                y /= total
+                k /= total
+            
+            # Convert to percentages
+            cmyk_matrix[i, j] = [c * 100, m * 100, y * 100, k * 100]
+
+    # Save the CMYK matrix to a CSV file
+    with open(generated_filepath, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['X', 'Y', 'Cyan', 'Magenta', 'Yellow', 'Black'])
+
+        for i in range(height):
+            for j in range(width):
+                writer.writerow([i, j] + list(cmyk_matrix[i, j]))
+
 def add_svg_to_image(background_image_path, svg_file_path, output_image_path):
     # Open the background image
     background_image = Image.open(background_image_path)
