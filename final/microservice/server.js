@@ -64,7 +64,7 @@ app.get('/analyze/image', (req, res) => {
 
 app.get('/analyze/csv', (req, res) => {
     // Read the CSV file from the file system
-    fs.readFile(`${process.cwd()}/../backend/media/generatedParts/${req.query.filename}/${req.query.filename}.csv`, (err, data) => {
+    fs.readFile(`${process.cwd()}/../backend/media/generatedParts/${req.query.filename}`, (err, data) => {
         if (err) {
             console.error(err);
             res.status(500).send('Internal Server Error');

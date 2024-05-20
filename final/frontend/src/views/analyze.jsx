@@ -17,6 +17,7 @@ const Analyze = () => {
     const [csv_matrix, setCsv_matrix] = useState(false);
     const [difference, setDifference] = useState(false);
     const [generated, setGenerated] = useState(false);
+    const [fix_background, setFix_background] = useState(false);
 
 
     
@@ -26,8 +27,8 @@ const Analyze = () => {
     const [form, setForm] = useState({
         fromX: 0,
         fromY: 0,
-        width: 0,
-        height: 0,
+        width: 100,
+        height: 100,
         
       });
 
@@ -105,6 +106,7 @@ useEffect(() => {
             setCsv_matrix(response.data.csv_matrix)
             setDifference(response.data.difference
             )
+            setFix_background(response.data.fix_background)
 
             // setGenerated(response.data.generated_filename)
         } catch (error) {
@@ -178,12 +180,17 @@ useEffect(() => {
 
 </form>
 <div className='generated_images'>
-        {generated_background ? <a href={`http://localhost:3000/analyze/image?filename=${generated_background}`} target='blank'>Generated background for order</a>: null}
-        {generated_red_background ? <a href={`http://localhost:3000/analyze/image?filename=${generated_red_background}`} target='blank'>Generated background with red difference for order</a>: null}
-        {csv_long ? <a href={`http://localhost:3000/analyze/csv?filename=${csv_long}`} target='blank'>CSV pixel data</a>: null}
-        {csv_matrix ? <a href={`http://localhost:3000/analyze/image?filename=${csv_matrix}`} target='blank'>CSV matrix</a>: null}
-        
-        {difference ? <div>{difference}</div>: null}
+
+        {/* {generated_background ? <a href={`http://localhost:3000/analyze/image?filename=${generated_background}`} target='blank'>Generated background for order</a>: null} */}
+        <div className='gen_links'>
+            {fix_background ? <a href={`http://localhost:3000/analyze/image?filename=${fix_background}`} target='blank'>FIXED PATTERN</a>: null}
+            {generated_red_background ? <a href={`http://localhost:3000/analyze/image?filename=${generated_red_background}`} target='blank'>Generated background with red difference for order</a>: null}
+            {csv_long ? <a href={`http://localhost:3000/analyze/csv?filename=${csv_long}`} target='blank'>CSV pixel data</a>: null}
+            {csv_matrix ? <a href={`http://localhost:3000/analyze/csv?filename=${csv_matrix}`} target='blank'>CSV matrix</a>: null}
+        </div>
+        {difference !== false ? 
+            (difference < 1) ? 
+            <div className='genLime'>{difference}</div> :<div className='genERRROR'>{difference}</div>: null}
 
                 {
                     generated ? <div> Generated background </div> : null

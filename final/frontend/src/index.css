@@ -106,5 +106,20 @@ h1.pageTitle{
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 5px;
+}
+.gen_links{
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.genERRROR{
+  background-color: red;
+  font-size: 40px;
+  padding: 20px;
+}
+.genLime{
+  background-color: lime;
+  font-size: 40px;
+  padding: 20px;
 }

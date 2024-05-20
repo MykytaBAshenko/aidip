@@ -32,7 +32,7 @@ from django.core import serializers
 from django.http import JsonResponse
 import numpy as np
 import csv
-SQUARES_IN_WIDTH = 190
+SQUARES_IN_WIDTH = 200
 def generate_chart_and_save_to_pdf(data,form_data,pdf_size_data, filename):
     # Prepare data for chart
     print(form_data)
@@ -342,6 +342,35 @@ class PNGManager:
         
         mismatch_percentage = (total_difference / max_possible_diff) * 100
         return mismatch_percentage
+    def generate_fix_image(self, image_path, generated_filepath, output_fixed_filepath):
+        base_image = Image.open(generated_filepath).convert("RGBA")
+        comparing_image = Image.open(image_path).convert("RGBA")
+        base_pixels = base_image.load()
+        comparing_pixels = comparing_image.load()
+        fix_image = Image.new('RGBA', base_image.size, (255, 255, 255, 0))  # Create a transparent image
+        fix_pixels = fix_image.load()
+
+        for x in range(base_image.width):
+            for y in range(base_image.height):
+                r1, g1, b1, a1 = base_pixels[x, y]
+                r2, g2, b2, a2 = comparing_pixels[x, y]
+
+                if (r1, g1, b1) != (r2, g2, b2):
+                    # Calculate the difference and apply proportional transparency
+                    diff_r = r1 - r2
+                    diff_g = g1 - g2
+                    diff_b = b1 - b2
+                    intensity = (abs(diff_r) + abs(diff_g) + abs(diff_b)) / 3
+                    alpha = int(255 * (intensity / 255))
+                    fix_pixels[x, y] = (
+                        max(0, min(255, diff_r)),
+                        max(0, min(255, diff_g)),
+                        max(0, min(255, diff_b)),
+                        alpha  # Set alpha proportional to the intensity of the difference
+                    )
+
+        # Save the fix image
+        fix_image.save(output_fixed_filepath, "PNG")
 class AnalyzeImage(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -376,20 +405,24 @@ class AnalyzeImage(APIView):
             generated_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_filename)
             generated_red_filename = current_time_unix + 'generated_background_red.png'
             generated_red_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_red_filename)
+            generated_fix_filename = current_time_unix + 'generated_background_fix.png'
+            generated_fix_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_fix_filename)
             generated_csv_small_filename = current_time_unix + 'generated_small.csv'
             generated_csv_small_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_csv_small_filename)
-            generated_csv_matrix_filename = current_time_unix + 'generated_big.csv'
+            generated_csv_matrix_filename = current_time_unix + 'dif_matrix.csv'
             generated_csv_matrix_filepath = os.path.join(settings.MEDIA_ROOT, 'generatedParts/', generated_csv_matrix_filename)
             manager.split_image()
             manager.combine_images(generated_filepath, 0, 0, 100, 100)
             difference = manager.compare_images(checkImagePath, generated_filepath, generated_red_filepath, generated_csv_small_filepath, generated_csv_matrix_filepath)
-            print(difference)
+            manager.generate_fix_image(checkImagePath, generated_filepath, generated_fix_filepath)
             return Response({'response': 'lol',
                             'generated_background': generated_filename,
                             'generated_red_background': generated_red_filename,
                             'csv_long': generated_csv_small_filename,
                             'csv_matrix': generated_csv_matrix_filename,
-                            'difference': difference
+                            'fix_background': generated_fix_filename,
+                            'difference': difference,
+
 
 
                      }, status=status.HTTP_201_CREATED)
